@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="et">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>Tartu E-Bike 300</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<!-- ===== HUD ===== -->
+<div id="hud">
+  <canvas id="mini" width="240" height="240"></canvas>
+  <div id="loc">Tartu</div>
+  <div id="help"><kbd>W</kbd>/<kbd>↑</kbd> gaas · <kbd>S</kbd>/<kbd>↓</kbd> pidur · <kbd>A</kbd><kbd>D</kbd> rool<br><kbd>T</kbd> teleport · <kbd>R</kbd> Raekoja plats · <kbd>C</kbd> kaamera/AI · <kbd>M</kbd> kaardi suum<br><kbd>Esc</kbd> menüü</div>
+  <canvas id="cam" width="176" height="132"></canvas>
+  <div id="bars">
+    <div><div class="bar bat"><i id="bBat"></i></div><div class="barl">AKU</div></div>
+    <div><div class="bar b"><i id="bBrake"></i></div><div class="barl">PIDUR</div></div>
+    <div><div class="bar g"><i id="bGas"></i></div><div class="barl">GAAS</div></div>
+  </div>
+  <div id="speed"><div class="v" id="spd">0</div><div class="u">km/h</div></div>
+  <div id="steer"><i id="steerI"></i></div>
+  <div id="msg"></div>
+</div>
+
+<!-- ===== MENÜÜ ===== -->
+<div class="panel" id="menu">
+  <div class="card">
+    <h1>TARTU E-BIKE 300</h1>
+    <p class="sub" id="sub">Elektriratta simulaator · päris Tartu OpenStreetMapist · liiklus · maanteed · 300 km/h</p>
+    <div class="row">
+      <button class="primary" id="btnCam">🎥 Kaamera + AI juhtimine</button>
+      <button id="btnKey">⌨️ Klaviatuur / pult</button>
+    </div>
+    <div class="row" style="align-items:center">
+      <span class="small">Graafika:</span>
+      <button id="qLow">Madal (digiboks)</button>
+      <button id="qHigh" class="sel">Kõrge (arvuti)</button>
+    </div>
+    <div id="loadbox" style="display:none"><div class="meter big"><i id="loadbar"></i></div><div id="loadmsg" class="small"></div></div>
+    <details class="small">
+      <summary>Kaart ja failid</summary>
+      <p>Kaardi allikas: <b id="mapsrc">–</b> <span id="mapstats"></span></p>
+      <div class="row">
+        <button id="btnMapReload">🔄 Laadi värske kaart OpenStreetMapist</button>
+        <button id="btnMapSave">💾 Salvesta kaardifail (data/tartu-osm.json)</button>
+      </div>
+      <p>Kui paned faili <code>data/tartu-osm.json</code> oma GitHubi reposse, laeb mäng kaardi sealt kohe ilma OpenStreetMapi ootamata.</p>
+    </details>
+    <p class="small">Kaamera vaatab sinu ratast: <b>pidurihoob</b> pidurdab, <b>käiguvahetaja</b> on gaas ja <b>pea kallutamisega</b> keerad. AI-d saad ise treenida: salvestad näited (hoob lahti, hoob all, pea vasakule jne) ja vajutad „Treeni AI“.</p>
+  </div>
+</div>
+
+<!-- ===== KAAMERA + AI ===== -->
+<div class="panel" id="camsetup">
+  <div class="card wide">
+    <h1 style="font-size:28px">Kaamera ja AI treening</h1>
+    <div class="camgrid">
+      <div>
+        <canvas id="cv" width="480" height="360"></canvas>
+        <p class="small">Vali kast ja <b>joonista</b> see pildile: <span style="color:#ff5c5c">PIDUR</span> = pidurihoob, <span style="color:#5cff7a">GAAS</span> = käiguvahetaja, <span style="color:#ffd23f">PEA</span> = sinu pea.</p>
+        <div class="row"><button id="rBrake">🔴 Pidur</button><button id="rGas">🟢 Gaas</button><button id="rHead" class="sel">🟡 Pea</button></div>
+        <div class="small">Pidur</div><div class="meter"><i id="mB"></i></div>
+        <div class="small">Gaas</div><div class="meter"><i id="mG"></i></div>
+        <div class="small">Rool</div><div class="meter" style="position:relative"><i id="mS" style="position:absolute;left:50%;width:4px;background:#ffd23f"></i></div>
+      </div>
+      <div>
+        <div class="tabs"><button id="tabAI" class="sel">🧠 AI treening</button><button id="tabSimple">🎯 Lihtne kalibreerimine</button></div>
+        <div id="paneAI">
+          <div id="recmsg">Vali allpool, mida salvestada. Pärast klikki on 3 s aega käed rattale panna, siis salvestan 4 s.</div>
+          <div id="aiControls"></div>
+          <div class="row">
+            <button class="primary" id="btnTrain">🧠 Treeni AI</button>
+            <button id="btnExport">⬇ Ekspordi AI</button>
+            <label class="btn"><input type="file" id="fileImport" accept=".json" hidden>⬆ Impordi AI</label>
+          </div>
+          <div id="trainmsg" class="small"></div>
+          <canvas id="trainchart" width="420" height="90"></canvas>
+        </div>
+        <div id="paneSimple" style="display:none">
+          <div id="calmsg">Joonista kastid ja vajuta „Kalibreeri“. (Kui AI on treenitud, kasutatakse AI-d.)</div>
+          <div class="row"><button class="primary" id="btnCal">🎯 Kalibreeri</button></div>
+        </div>
+        <div class="row">
+          <button id="btnInv">↔ Pööra rool</button>
+          <button class="primary" id="btnGo">▶ Sõitma!</button>
+          <button id="btnCamBack">Tagasi</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script src="js/three.min.js"></script>
+<script src="js/osm.js"></script>
+<script src="js/fallback.js"></script>
+<script src="js/world.js"></script>
+<script src="js/traffic.js"></script>
+<script src="js/ai.js"></script>
+<script src="js/vision.js"></script>
+<script src="js/game.js"></script>
+</body>
+</html>
